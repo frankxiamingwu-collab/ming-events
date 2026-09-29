@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>明清易代历史事件地图 (1627–1662)</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="title-block">
+    <h1>明清易代历史事件地图</h1>
+    <div class="subtitle">崇祯即位 → 南明灭亡 · 1627–1662</div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="top-actions">
+    <button id="btn-reset" title="显示全部事件">重置</button>
+    <button id="btn-about" title="说明">说明</button>
+  </div>
+</header>
+
+<div id="main">
+  <aside id="sidebar">
+    <section class="panel">
+      <h2>检索</h2>
+      <input id="search" type="text" placeholder="搜人名 / 地名 / 事件关键词…">
+    </section>
+
+    <section class="panel">
+      <h2>分类筛选</h2>
+      <div id="cat-filters" class="chip-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>时间段图例（点击开关）</h2>
+      <div id="period-legend" class="legend-list"></div>
+    </section>
+
+    <section class="panel" id="list-panel">
+      <h2>事件列表 <span id="list-count"></span></h2>
+      <div id="event-list"></div>
+    </section>
+  </aside>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+    <div id="playbar">
+      <button id="btn-play" title="播放/暂停">▶ 播放</button>
+      <select id="speed" title="播放速度">
+        <option value="1">1 月/步</option>
+        <option value="3" selected>3 月/步</option>
+        <option value="12">1 年/步</option>
+      </select>
+      <select id="mode" title="显示模式">
+        <option value="cumulative" selected>累计出现</option>
+        <option value="single">仅当前月</option>
+        <option value="decade">近十年内</option>
+      </select>
+      <div class="slider-wrap">
+        <input id="timeline" type="range" min="0" max="431" value="431" step="1">
+        <div id="ticks"></div>
+      </div>
+      <div id="time-label">1662年12月</div>
+    </div>
+    <div id="loading">正在载入事件数据…</div>
+  </div>
+</div>
+
+<div id="about-modal" class="modal hidden">
+  <div class="modal-body">
+    <h2>关于本页</h2>
+    <p>本页展示 <b>1627 年崇祯帝即位至 1662 年南明永历帝遇难</b> 期间的重要历史事件，数据存于本地 SQLite 数据库 <code>events.db</code>，页面由 <code>data.js</code> 驱动。</p>
+    <ul>
+      <li><b>时间轴</b>：拖动底部滑块或点击播放，事件按时间顺序在地图上出现。</li>
+      <li><b>着色</b>：标记点按时间段着色（见左侧图例），点击图例可开关某一时段。</li>
+      <li><b>筛选</b>：可按分类、关键词过滤；点击标记点或列表条目查看详情。</li>
+      <li><b>底图</b>：OpenStreetMap；淡色多边形为明代两京十三布政使司（示意性大区界线）。</li>
+    </ul>
+    <p class="hint">数据为史料整理成果，日期以公历年月表示，个别事件月份容有出入，欢迎校订。</p>
+    <button id="btn-close-about">关闭</button>
+  </div>
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="ming_units.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
