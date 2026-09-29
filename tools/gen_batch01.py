@@ -399,3 +399,18 @@ add("1629-08-01", "北京", "", "外交", "安南入贡，贡使至京师")
 add("1629-11-01", "汉城", "仁祖", "外交", "朝鲜仁祖以明使将至，君臣议待之之礼")
 
 # ---CHUNK---
+
+
+if __name__ == "__main__":
+    out = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "raw", "batch_01.jsonl")
+    seen = set()
+    n = 0
+    with open(out, "w", encoding="utf-8") as f:
+        for d, p, per, c, s in EVENTS:
+            key = (d, p, s)
+            if key in seen:
+                continue
+            seen.add(key)
+            f.write(json.dumps({"d": d, "p": p, "n": per, "c": c, "s": s}, ensure_ascii=False) + "\n")
+            n += 1
+    print(f"wrote {out}: {n} events")

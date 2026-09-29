@@ -22,6 +22,14 @@ GAZ_FILES = [
 YEAR_MIN, YEAR_MAX = 1627, 1662
 
 
+def bigrams(s):
+    """中文二元组索引串：'扬州之战' -> '扬州 州之 之战'"""
+    s = re.sub(r"\s+", "", s or "")
+    if len(s) < 2:
+        return s
+    return " ".join(s[i:i + 2] for i in range(len(s) - 1))
+
+
 def load_gazetteer():
     name2geo = {}      # 主名/别名 -> (主名, lat, lon, province)
     canonical = {}     # 主名 -> (lat, lon, province, aliases)
@@ -190,8 +198,13 @@ def main():
     cur.executemany("INSERT OR REPLACE INTO places (name,aliases,ming_province,lat,lon) VALUES (?,?,?,?,?)",
                     [(n, a, p, la, lo) for n, (la, lo, p, a) in canonical.items()])
     try:
-        cur.execute("CREATE VIRTUAL TABLE events_fts USING fts5(summary, persons, place, content='events', content_rowid='id')")
-        cur.execute("INSERT INTO events_fts(rowid, summary, persons, place) SELECT id, summary, persons, place FROM events")
+        # 中文子串检索：把文本拆成二元组(bigram)建索引，查询串同样拆成二元组成短语，
+        # 可匹配任意长度（≥2字）的中文子串。
+        cur.execute("CREATE VIRTUAL TABLE events_fts USING fts5(txt)")
+        cur.executemany(
+            "INSERT INTO events_fts(rowid, txt) VALUES (?, ?)",
+            [(rid, bigrams(" ".join([s, p, pl])) ) for rid, s, p, pl in
+             cur.execute("SELECT id, summary, persons, place FROM events").fetchall()])
     except sqlite3.OperationalError as e:
         print("FTS5 unavailable:", e)
     con.commit()
