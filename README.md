@@ -18,8 +18,8 @@ ming-events/
 │   ├── build_db.py        # JSONL + gazetteer → events.db
 │   ├── export_web.py      # events.db → web/data.js
 │   └── qa_report.py       # 数据质检
+├── index.html             # 站点入口（ming-events/ 即站点根）
 ├── web/
-│   ├── index.html         # 交互网页入口（双击即可打开）
 │   ├── app.js / style.css / data.js / ming_units.js
 │   └── vendor/            # Leaflet 离线资源
 └── serve.py               # 可选本地服务器
@@ -36,7 +36,7 @@ ming-events/
 
 ## 使用方法
 
-1. **查看网页**：直接双击 `web/index.html`；或运行 `python3 serve.py` 后访问 <http://127.0.0.1:8686/web/>
+1. **查看网页**：入口为 `ming-events/index.html`（站点发布入口，`ming-events/` 即站点根）；本地预览运行 `python3 serve.py` 后访问 <http://127.0.0.1:8686/>
 2. **全文检索**：`python3 tools/search.py 李定国 20`（中文任意子串，FTS5 二元组索引）
 3. **查询数据库**：
    ```bash
