@@ -84,12 +84,16 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* ---------- 地图 ---------- */
 #map-wrap { flex: 1; position: relative; min-width: 0; }
-#map { position: absolute; inset: 0 0 62px 0; background: #dfe6e2; }
-.leaflet-tile-pane { filter: sepia(0.28) saturate(0.82) brightness(1.03) contrast(0.96); }
+#map { position: absolute; inset: 0 0 62px 0; background: #b9c9cc; }  /* 海域底色 */
+.river-label {
+  background: transparent; border: none; box-shadow: none;
+  color: #4c6b7a; font-size: 11px; letter-spacing: 2px;
+  text-shadow: 0 0 3px #f0e9d8, 0 0 5px #f0e9d8; white-space: nowrap;
+}
 .unit-label {
   background: transparent; border: none; box-shadow: none;
-  color: #6b5b44; font-size: 12px; font-weight: bold; letter-spacing: 3px;
-  text-shadow: 0 0 3px #fff, 0 0 6px #fff; opacity: .8; white-space: nowrap;
+  color: #5c4a30; font-size: 12px; font-weight: bold; letter-spacing: 3px;
+  text-shadow: 0 0 3px #f0e9d8, 0 0 6px #f0e9d8; opacity: .9; white-space: nowrap;
 }
 
 #loading {

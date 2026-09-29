@@ -6,26 +6,18 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB = os.path.join(BASE, "events.db")
 OUT = os.path.join(BASE, "web", "data.js")
 
-# 分类固定顺序
-CATS = ["战争", "起义", "政治", "南明", "清朝", "外交", "灾害", "社会", "文化", "人物"]
-# 时间段配色（与网页图例一致）
-PERIODS = [
-    {"id": 0, "label": "崇祯初政 1627–1635", "from": 1627, "to": 1635, "color": "#2c7fb8"},
-    {"id": 1, "label": "崇祯中衰 1636–1641", "from": 1636, "to": 1641, "color": "#41ab5d"},
-    {"id": 2, "label": "明末剧变 1642–1643", "from": 1642, "to": 1643, "color": "#f16913"},
-    {"id": 3, "label": "甲申之变 1644", "from": 1644, "to": 1644, "color": "#d7301f"},
-    {"id": 4, "label": "乙酉丙戌 1645–1646", "from": 1645, "to": 1646, "color": "#7b3294"},
-    {"id": 5, "label": "永历前期 1647–1652", "from": 1647, "to": 1652, "color": "#c51b7d"},
-    {"id": 6, "label": "永历后期 1653–1658", "from": 1653, "to": 1658, "color": "#8c510a"},
-    {"id": 7, "label": "南明覆亡 1659–1662", "from": 1659, "to": 1662, "color": "#252525"},
-]
-
-
-def period_of(year):
-    for p in PERIODS:
-        if p["from"] <= year <= p["to"]:
-            return p["id"]
-    return 0
+# 通用事件分类（跨时代适用）与配色
+CATS = ["战争", "政治", "起义", "外交", "社会", "灾害", "文化", "人物"]
+CAT_COLORS = {
+    "战争": "#b03a2e",
+    "政治": "#2c5f8a",
+    "起义": "#d98324",
+    "外交": "#23856d",
+    "社会": "#7d5ba6",
+    "灾害": "#8a6d1f",
+    "文化": "#b0447a",
+    "人物": "#5d6d7d",
+}
 
 
 def main():
@@ -54,7 +46,7 @@ def main():
     meta = {
         "total": total, "mapped": len(evs), "dropped": dropped,
         "year_min": 1627, "year_max": 1662,
-        "cats": CATS, "periods": PERIODS,
+        "cats": CATS, "cat_colors": CAT_COLORS,
         "generated": __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
     with open(OUT, "w", encoding="utf-8") as f:

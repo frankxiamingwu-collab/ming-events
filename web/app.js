@@ -1,7 +1,7 @@
 /* 明清易代历史事件地图 — 交互逻辑
+ * 底图：自绘明末历史地图（政区/河流/长城，无在线瓦片）
  * 数据: window.EVENTS = [[id, date_raw, month_idx, lat, lon, cat, place, summary, persons, precision, ming_province], ...]
- *       window.META  = {total, mapped, year_min, year_max, cats, periods}
- *       window.MING_UNITS = GeoJSON (明代大区)
+ *       window.META  = {total, mapped, year_min, year_max, cats, cat_colors}
  */
 (function () {
   "use strict";
@@ -11,24 +11,20 @@
   const Y0 = META.year_min, Y1 = META.year_max;
   const MONTHS = (Y1 - Y0 + 1) * 12;          // 432
   const IDX = { id: 0, date: 1, m: 2, lat: 3, lon: 4, cat: 5, place: 6, sum: 7, per: 8, prec: 9, prov: 10 };
+  const CAT_COLOR = META.cat_colors || {};
 
-  /* ---------------- 地图 ---------------- */
-  const map = L.map("map", { zoomControl: true, preferCanvas: true, minZoom: 4, maxZoom: 12 })
+  /* ---------------- 地图（明末历史地图风格自绘底图） ---------------- */
+  const map = L.map("map", { zoomControl: true, preferCanvas: true, minZoom: 4, maxZoom: 10 })
     .setView([32.5, 110.5], 5);
 
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    attribution: '&copy; OpenStreetMap 贡献者 | 明代政区为示意',
-  }).addTo(map);
-
-  // 明代大区着色
+  // 明代大区：设色底
   if (window.MING_UNITS) {
     L.geoJSON(window.MING_UNITS, {
       style: (f) => ({
         fillColor: f.properties.color,
-        fillOpacity: 0.32,
-        color: f.properties.color,
-        weight: 1.2,
+        fillOpacity: 0.55,
+        color: "#a9946c",
+        weight: 1.1,
         opacity: 0.9,
       }),
       onEachFeature: (f, layer) => {
@@ -43,29 +39,62 @@
     }).addTo(map);
   }
 
+  // 明代主要河流（示意走向，含明末黄河夺淮入海河道）
+  const RIVERS = [
+    { name: "黄河", pts: [[34.80, 113.70], [34.95, 114.40], [34.75, 115.55], [34.35, 117.15], [34.15, 118.15], [33.85, 118.90], [33.60, 119.30], [34.05, 119.60], [34.35, 119.85]] },
+    { name: "长江", pts: [[30.70, 111.29], [30.35, 112.24], [29.72, 112.95], [30.59, 114.31], [29.71, 116.00], [30.51, 117.05], [30.96, 117.79], [31.34, 118.43], [32.06, 118.80], [32.19, 119.45], [32.20, 120.20], [31.90, 121.20], [31.50, 121.80]] },
+    { name: "淮河", pts: [[32.37, 113.41], [32.62, 114.60], [32.87, 115.55], [32.63, 116.26], [32.87, 117.20], [33.05, 118.10], [33.35, 118.95], [33.55, 119.45]] },
+    { name: "汉水", pts: [[30.58, 114.27], [31.20, 113.30], [32.01, 112.12], [32.55, 111.55], [33.00, 109.50], [33.07, 107.02]] },
+    { name: "西江", pts: [[23.13, 113.26], [23.05, 112.47], [23.25, 111.60], [23.48, 111.28], [23.39, 110.08]] },
+    { name: "郁江", pts: [[23.39, 110.08], [23.10, 109.20], [22.82, 108.32]] },
+    { name: "赣江", pts: [[28.68, 115.86], [27.80, 115.30], [27.11, 114.99], [26.20, 114.80], [25.83, 114.94], [25.35, 114.35]] },
+    { name: "运河", pts: [[39.90, 116.40], [39.13, 117.20], [37.50, 116.40], [36.84, 115.71], [35.41, 116.59], [34.26, 117.19], [33.60, 119.02], [32.39, 119.42], [32.19, 119.45], [31.38, 120.30], [30.75, 120.76], [30.27, 120.16]] },
+    { name: "辽河", pts: [[41.80, 123.43], [41.27, 123.18], [40.90, 122.30], [40.75, 121.80]] },
+    { name: "湘江", pts: [[28.23, 112.94], [27.83, 112.95], [26.89, 112.57], [26.42, 111.61], [25.79, 111.20]] },
+    { name: "赣江支", pts: [[28.45, 117.97], [28.20, 117.00], [27.80, 115.30]] },
+    { name: "珠江", pts: [[23.13, 113.26], [22.78, 113.63], [22.53, 113.92]] },
+    { name: "怒江", pts: [[25.50, 98.80], [24.60, 99.20], [23.50, 99.00], [22.20, 98.50]] },
+    { name: "澜沧江", pts: [[26.00, 99.50], [24.00, 100.10], [22.50, 100.50], [21.20, 101.20]] },
+  ];
+  const riverPane = map.createPane("rivers");
+  riverPane.style.zIndex = 450;
+  for (const r of RIVERS) {
+    L.polyline(r.pts, { pane: "rivers", color: "#6d8fa0", weight: 1.8, opacity: 0.85 }).addTo(map);
+    if (["黄河", "长江", "运河"].includes(r.name)) {
+      L.marker(r.pts[Math.floor(r.pts.length / 2)], {
+        icon: L.divIcon({ className: "river-label", html: r.name }),
+        interactive: false,
+        pane: "rivers",
+      }).addTo(map);
+    }
+  }
+
+  // 明长城（九边，示意）
+  L.polyline(
+    [[39.80, 98.27], [39.20, 100.30], [38.30, 102.50], [37.90, 104.20], [38.10, 106.50],
+     [38.00, 107.80], [38.80, 109.70], [39.50, 111.50], [39.95, 112.40], [40.30, 113.30],
+     [40.82, 114.90], [41.25, 115.75], [40.68, 117.12], [40.40, 117.20], [40.10, 118.30], [40.00, 119.75]],
+    { color: "#8c5a2b", weight: 2.2, dashArray: "7 5", opacity: 0.9 }
+  ).addTo(map);
+  L.marker([39.55, 111.60], {
+    icon: L.divIcon({ className: "river-label", html: "长城 · 九边" }), interactive: false,
+  }).addTo(map);
+
   const markerLayer = L.layerGroup().addTo(map);
 
   /* ---------------- 状态 ---------------- */
-  let sliderIdx = MONTHS - 1;
-  let mode = "cumulative";
+  let sliderIdx = MONTHS - 1;          // 默认 1662 年
+  let mode = "recent3";                // 默认显示长度：近三年内
   let query = "";
   const activeCats = new Set(META.cats);
-  const activePeriods = new Set(META.periods.map((p) => p.id));
-  const shown = new Map();   // id -> circleMarker
+  const shown = new Map();             // id -> circleMarker
   let filtered = [];
   let playing = false, timer = null;
 
-  const periodColor = (year) => {
-    for (const p of META.periods) if (year >= p.from && year <= p.to) return p.color;
-    return "#666";
-  };
   const yearOf = (ev) => parseInt(ev[IDX.date], 10);
-  const periodIdOf = (year) => {
-    for (const p of META.periods) if (year >= p.from && year <= p.to) return p.id;
-    return 0;
-  };
+  const catColor = (ev) => CAT_COLOR[ev[IDX.cat]] || "#666";
 
-  /* 确定性抖动：同城多事件散开，避免完全重叠 */
+  /* 确定性抖动：同城多事件散开 */
   function jitter(ev) {
     const h = (ev[IDX.id] * 2654435761) % 4294967296;
     const ang = ((h % 3600) / 3600) * Math.PI * 2;
@@ -74,9 +103,7 @@
   }
 
   function passes(ev) {
-    const cat = ev[IDX.cat];
-    if (!activeCats.has(cat)) return false;
-    if (!activePeriods.has(periodIdOf(yearOf(ev)))) return false;
+    if (!activeCats.has(ev[IDX.cat])) return false;
     if (query) {
       const hay = (ev[IDX.sum] + " " + ev[IDX.per] + " " + ev[IDX.place] + " " + ev[IDX.date]).toLowerCase();
       if (!hay.includes(query)) return false;
@@ -86,15 +113,18 @@
 
   function inTime(ev) {
     const m = ev[IDX.m];
-    if (mode === "single") return m === sliderIdx;
-    if (mode === "decade") return m <= sliderIdx && m > sliderIdx - 120;
-    return m <= sliderIdx;
+    switch (mode) {
+      case "single": return m === sliderIdx;
+      case "recent3": return m <= sliderIdx && m > sliderIdx - 36;
+      case "decade": return m <= sliderIdx && m > sliderIdx - 120;
+      default: return m <= sliderIdx;   // cumulative
+    }
   }
 
   function popupHTML(ev) {
     return (
       '<div><span class="pop-date">' + ev[IDX.date] + '</span>' +
-      '<span class="pop-cat">' + ev[IDX.cat] + "</span></div>" +
+      '<span class="pop-cat" style="background:' + catColor(ev) + '">' + ev[IDX.cat] + "</span></div>" +
       '<div class="pop-place">' + ev[IDX.place] +
       (ev[IDX.prov] ? "（" + ev[IDX.prov] + "）" : "") + "</div>" +
       '<div class="pop-sum">' + ev[IDX.sum] + "</div>" +
@@ -104,12 +134,11 @@
 
   function makeMarker(ev) {
     const [la, lo] = jitter(ev);
-    const y = yearOf(ev);
     return L.circleMarker([la, lo], {
       radius: 4.5,
       color: "#3a2c1e",
       weight: 0.6,
-      fillColor: periodColor(y),
+      fillColor: catColor(ev),
       fillOpacity: 0.85,
     }).bindPopup(popupHTML(ev), { maxWidth: 300 });
   }
@@ -157,7 +186,7 @@
     for (const ev of recent) {
       const div = document.createElement("div");
       div.className = "ev-item";
-      div.style.borderLeftColor = periodColor(yearOf(ev));
+      div.style.borderLeftColor = catColor(ev);
       div.innerHTML =
         '<div><span class="ev-date">' + ev[IDX.date] + '</span><span class="ev-place">' +
         ev[IDX.place] + " · " + ev[IDX.cat] + "</span></div>" +
@@ -254,14 +283,11 @@
     document.getElementById("search").value = "";
     activeCats.clear();
     META.cats.forEach((c) => activeCats.add(c));
-    activePeriods.clear();
-    META.periods.forEach((p) => activePeriods.add(p.id));
     sliderIdx = MONTHS - 1;
     timeline.value = sliderIdx;
     timeLabel.textContent = monthLabel(sliderIdx);
-    mode = "cumulative";
-    document.getElementById("mode").value = "cumulative";
-    buildCatFilters();
+    mode = "recent3";
+    document.getElementById("mode").value = "recent3";
     applyFilters();
     map.setView([32.5, 110.5], 5);
   });
@@ -276,38 +302,20 @@
     }, 180);
   });
 
-  // 分类筛选
-  function buildCatFilters() {
-    const box = document.getElementById("cat-filters");
+  // 分类图例（着色 + 计数 + 开关）
+  function updateLegend() {
+    const box = document.getElementById("cat-legend");
     box.innerHTML = "";
     for (const c of META.cats) {
+      const n = filtered.filter((ev) => ev[IDX.cat] === c).length;
       const div = document.createElement("div");
-      div.className = "chip" + (activeCats.has(c) ? " active" : "");
-      div.textContent = c;
+      div.className = "legend-item" + (activeCats.has(c) ? "" : " off");
+      div.innerHTML =
+        '<span class="legend-swatch" style="background:' + (CAT_COLOR[c] || "#666") + '"></span>' +
+        "<span>" + c + '</span><span class="legend-count">' + n + "</span>";
       div.addEventListener("click", () => {
         if (activeCats.has(c)) activeCats.delete(c);
         else activeCats.add(c);
-        div.classList.toggle("active", activeCats.has(c));
-        applyFilters();
-      });
-      box.appendChild(div);
-    }
-  }
-
-  // 图例
-  function updateLegend() {
-    const box = document.getElementById("period-legend");
-    box.innerHTML = "";
-    for (const p of META.periods) {
-      const n = filtered.filter((ev) => periodIdOf(yearOf(ev)) === p.id).length;
-      const div = document.createElement("div");
-      div.className = "legend-item" + (activePeriods.has(p.id) ? "" : " off");
-      div.innerHTML =
-        '<span class="legend-swatch" style="background:' + p.color + '"></span>' +
-        "<span>" + p.label + '</span><span class="legend-count">' + n + "</span>";
-      div.addEventListener("click", () => {
-        if (activePeriods.has(p.id)) activePeriods.delete(p.id);
-        else activePeriods.add(p.id);
         applyFilters();
       });
       box.appendChild(div);
@@ -322,7 +330,6 @@
 
   /* ---------------- 启动 ---------------- */
   timeLabel.textContent = monthLabel(sliderIdx);
-  buildCatFilters();
   applyFilters();
   const loading = document.getElementById("loading");
   if (loading) loading.remove();

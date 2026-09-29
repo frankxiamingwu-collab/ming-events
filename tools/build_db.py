@@ -30,6 +30,30 @@ def bigrams(s):
     return " ".join(s[i:i + 2] for i in range(len(s) - 1))
 
 
+# 通用事件分类（适用于任何历史时期）；原始分类保留于 category_src 供参考
+GENERIC_CATS = ["战争", "政治", "起义", "外交", "社会", "灾害", "文化", "人物"]
+WAR_KW = ("战", "攻", "克", "破", "围", "陷", "守", "袭", "拒", "溃", "捷", "征", "援", "取", "兵", "役")
+PERSON_KW = ("卒", "殉", "就义", "遇害", "自缢", "殁", "病逝", "死之", "死难")
+CULTURE_KW = ("著", "撰", "书成", "刊行", "编撰", "讲学", "诗文", "历法", "历书", "书院")
+SOCIAL_KW = ("粮", "饷", "赈", "赋税", "蠲", "米价", "盐", "漕", "屯田", "铸钱", "户口", "民饥")
+
+
+def generic_cat(orig, s):
+    """把政权专属分类（南明/清朝等）归并到通用分类；其余原样保留。"""
+    if orig in GENERIC_CATS:
+        return orig
+    war = any(k in s for k in WAR_KW)
+    if any(k in s for k in PERSON_KW) and not war:
+        return "人物"
+    if war:
+        return "战争"
+    if any(k in s for k in CULTURE_KW):
+        return "文化"
+    if any(k in s for k in SOCIAL_KW):
+        return "社会"
+    return "政治"
+
+
 def load_gazetteer():
     name2geo = {}      # 主名/别名 -> (主名, lat, lon, province)
     canonical = {}     # 主名 -> (lat, lon, province, aliases)
@@ -164,7 +188,8 @@ def main():
                     "date_raw": f"{y}-{mo:02d}-{day:02d}" if day else (f"{y}-{mo:02d}" if mo else str(y)),
                     "precision": prec, "year": y, "month": mo, "day": day, "month_idx": mi,
                     "place": place, "place_norm": pname, "ming_province": prov,
-                    "lat": lat, "lon": lon, "persons": persons, "category": cat,
+                    "lat": lat, "lon": lon, "persons": persons, "category": generic_cat(cat, summ),
+                    "category_src": cat,
                     "summary": summ, "batch": batch,
                 })
 
@@ -179,7 +204,7 @@ def main():
         year INTEGER, month INTEGER, day INTEGER, month_idx INTEGER,
         place TEXT, place_norm TEXT, ming_province TEXT,
         lat REAL, lon REAL,
-        persons TEXT, category TEXT, summary TEXT, batch TEXT
+        persons TEXT, category TEXT, category_src TEXT, summary TEXT, batch TEXT
     );
     CREATE TABLE places (
         name TEXT PRIMARY KEY, aliases TEXT, ming_province TEXT, lat REAL, lon REAL
@@ -222,7 +247,8 @@ def main():
         n = sum(1 for e in events if e["year"] == y)
         if n:
             print(f"  {y}: {n}")
-    print("\nby category:", dict(Counter(e["category"] for e in events)))
+    print("\nby category(通用):", dict(Counter(e["category"] for e in events)))
+    print("by category(原始):", dict(Counter(e["category_src"] for e in events)))
     con.close()
     print("wrote", DB_PATH)
 

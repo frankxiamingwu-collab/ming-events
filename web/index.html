@@ -15,7 +15,7 @@
   </div>
   <div class="stats" id="stats"></div>
   <div class="top-actions">
-    <button id="btn-reset" title="显示全部事件">重置</button>
+    <button id="btn-reset" title="恢复默认设置">重置</button>
     <button id="btn-about" title="说明">说明</button>
   </div>
 </header>
@@ -28,13 +28,8 @@
     </section>
 
     <section class="panel">
-      <h2>分类筛选</h2>
-      <div id="cat-filters" class="chip-grid"></div>
-    </section>
-
-    <section class="panel">
-      <h2>时间段图例（点击开关）</h2>
-      <div id="period-legend" class="legend-list"></div>
+      <h2>事件分类图例（点击开关）</h2>
+      <div id="cat-legend" class="legend-list"></div>
     </section>
 
     <section class="panel" id="list-panel">
@@ -52,10 +47,11 @@
         <option value="3" selected>3 月/步</option>
         <option value="12">1 年/步</option>
       </select>
-      <select id="mode" title="显示模式">
-        <option value="cumulative" selected>累计出现</option>
-        <option value="single">仅当前月</option>
+      <select id="mode" title="事件显示长度">
+        <option value="recent3" selected>近三年内</option>
         <option value="decade">近十年内</option>
+        <option value="cumulative">累计出现</option>
+        <option value="single">仅当前月</option>
       </select>
       <div class="slider-wrap">
         <input id="timeline" type="range" min="0" max="431" value="431" step="1">
@@ -72,12 +68,12 @@
     <h2>关于本页</h2>
     <p>本页展示 <b>1627 年崇祯帝即位至 1662 年南明永历帝遇难</b> 期间的重要历史事件，数据存于本地 SQLite 数据库 <code>events.db</code>，页面由 <code>data.js</code> 驱动。</p>
     <ul>
-      <li><b>时间轴</b>：拖动底部滑块或点击播放，事件按时间顺序在地图上出现。</li>
-      <li><b>着色</b>：标记点按时间段着色（见左侧图例），点击图例可开关某一时段。</li>
+      <li><b>底图</b>：自绘明末历史地图——明代两京十三布政使司设色政区、明代河流（含明末黄河夺淮河道）、明长城九边，无在线瓦片依赖。</li>
+      <li><b>时间轴</b>：拖动底部滑块或点击播放，事件按时间顺序出现；默认自 1662 年起，显示长度默认「近三年内」。</li>
+      <li><b>着色</b>：标记点按事件分类着色（战争/政治/起义/外交/社会/灾害/文化/人物），图例可点击开关。</li>
       <li><b>筛选</b>：可按分类、关键词过滤；点击标记点或列表条目查看详情。</li>
-      <li><b>底图</b>：OpenStreetMap；淡色多边形为明代两京十三布政使司（示意性大区界线）。</li>
     </ul>
-    <p class="hint">数据为史料整理成果，日期以公历年月表示，个别事件月份容有出入，欢迎校订。</p>
+    <p class="hint">数据为史料整理成果，日期按公历年月表示，个别事件月份容有出入，欢迎校订。</p>
     <button id="btn-close-about">关闭</button>
   </div>
 </div>
