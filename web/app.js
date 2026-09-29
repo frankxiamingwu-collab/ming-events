@@ -1,5 +1,5 @@
 /* 明清易代历史事件地图 — 交互逻辑
- * 底图：自绘明末历史地图（政区/河流/长城，无在线瓦片）
+ * 底图：自绘明末历史地图（政区设色 / 明代河流 / 明长城九边，无在线瓦片）
  * 数据: window.EVENTS = [[id, date_raw, month_idx, lat, lon, cat, place, summary, persons, precision, ming_province], ...]
  *       window.META  = {total, mapped, year_min, year_max, cats, cat_colors}
  */
@@ -13,13 +13,14 @@
   const IDX = { id: 0, date: 1, m: 2, lat: 3, lon: 4, cat: 5, place: 6, sum: 7, per: 8, prec: 9, prov: 10 };
   const CAT_COLOR = META.cat_colors || {};
 
-  /* ---------------- 地图（明末历史地图风格自绘底图） ---------------- */
+  /* ---------------- 地图（自绘明末历史地图风格） ---------------- */
   const map = L.map("map", { zoomControl: true, preferCanvas: true, minZoom: 4, maxZoom: 10 })
     .setView([32.5, 110.5], 5);
 
   // 明代大区：设色底
   if (window.MING_UNITS) {
     L.geoJSON(window.MING_UNITS, {
+      interactive: false,
       style: (f) => ({
         fillColor: f.properties.color,
         fillOpacity: 0.55,
@@ -28,13 +29,31 @@
         opacity: 0.9,
       }),
       onEachFeature: (f, layer) => {
-        const b = layer.getBounds();
-        if (b.isValid()) {
-          L.marker(b.getCenter(), {
-            icon: L.divIcon({ className: "unit-label", html: f.properties.label }),
-            interactive: false,
-          }).addTo(map);
+        // 标注置于最大图块的中心（多块政区/国家避免标注漂移）
+        let best = null, bestA = -1;
+        const geom = f.geometry;
+        const polys = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
+        for (const poly of polys) {
+          const ring = poly[0];
+          let a = 0;
+          for (let i = 0; i < ring.length; i++) {
+            const [x1, y1] = ring[i], [x2, y2] = ring[(i + 1) % ring.length];
+            a += x1 * y2 - x2 * y1;
+          }
+          a = Math.abs(a / 2);
+          if (a > bestA) { bestA = a; best = ring; }
         }
+        if (!best) return;
+        let x0 = Infinity, x1v = -Infinity, y0 = Infinity, y1v = -Infinity;
+        for (const [px, py] of best) {
+          if (px < x0) x0 = px; if (px > x1v) x1v = px;
+          if (py < y0) y0 = py; if (py > y1v) y1v = py;
+        }
+        const c = [(y0 + y1v) / 2, (x0 + x1v) / 2];
+        L.marker(c, {
+          icon: L.divIcon({ className: f.properties.kind === "country" ? "country-label" : "unit-label", html: f.properties.label }),
+          interactive: false,
+        }).addTo(map);
       },
     }).addTo(map);
   }
@@ -51,7 +70,6 @@
     { name: "运河", pts: [[39.90, 116.40], [39.13, 117.20], [37.50, 116.40], [36.84, 115.71], [35.41, 116.59], [34.26, 117.19], [33.60, 119.02], [32.39, 119.42], [32.19, 119.45], [31.38, 120.30], [30.75, 120.76], [30.27, 120.16]] },
     { name: "辽河", pts: [[41.80, 123.43], [41.27, 123.18], [40.90, 122.30], [40.75, 121.80]] },
     { name: "湘江", pts: [[28.23, 112.94], [27.83, 112.95], [26.89, 112.57], [26.42, 111.61], [25.79, 111.20]] },
-    { name: "赣江支", pts: [[28.45, 117.97], [28.20, 117.00], [27.80, 115.30]] },
     { name: "珠江", pts: [[23.13, 113.26], [22.78, 113.63], [22.53, 113.92]] },
     { name: "怒江", pts: [[25.50, 98.80], [24.60, 99.20], [23.50, 99.00], [22.20, 98.50]] },
     { name: "澜沧江", pts: [[26.00, 99.50], [24.00, 100.10], [22.50, 100.50], [21.20, 101.20]] },
@@ -59,7 +77,7 @@
   const riverPane = map.createPane("rivers");
   riverPane.style.zIndex = 450;
   for (const r of RIVERS) {
-    L.polyline(r.pts, { pane: "rivers", color: "#6d8fa0", weight: 1.8, opacity: 0.85 }).addTo(map);
+    L.polyline(r.pts, { pane: "rivers", color: "#6d8fa0", weight: 1.8, opacity: 0.85, interactive: false }).addTo(map);
     if (["黄河", "长江", "运河"].includes(r.name)) {
       L.marker(r.pts[Math.floor(r.pts.length / 2)], {
         icon: L.divIcon({ className: "river-label", html: r.name }),
@@ -74,7 +92,7 @@
     [[39.80, 98.27], [39.20, 100.30], [38.30, 102.50], [37.90, 104.20], [38.10, 106.50],
      [38.00, 107.80], [38.80, 109.70], [39.50, 111.50], [39.95, 112.40], [40.30, 113.30],
      [40.82, 114.90], [41.25, 115.75], [40.68, 117.12], [40.40, 117.20], [40.10, 118.30], [40.00, 119.75]],
-    { color: "#8c5a2b", weight: 2.2, dashArray: "7 5", opacity: 0.9 }
+    { color: "#8c5a2b", weight: 2.2, dashArray: "7 5", opacity: 0.9, interactive: false }
   ).addTo(map);
   L.marker([39.55, 111.60], {
     icon: L.divIcon({ className: "river-label", html: "长城 · 九边" }), interactive: false,
@@ -84,7 +102,7 @@
 
   /* ---------------- 状态 ---------------- */
   let sliderIdx = MONTHS - 1;          // 默认 1662 年
-  let mode = "recent3";                // 默认显示长度：近三年内
+  let mode = "recent3m";               // 默认显示长度：近三月内
   let query = "";
   const activeCats = new Set(META.cats);
   const shown = new Map();             // id -> circleMarker
@@ -114,10 +132,10 @@
   function inTime(ev) {
     const m = ev[IDX.m];
     switch (mode) {
-      case "single": return m === sliderIdx;
-      case "recent3": return m <= sliderIdx && m > sliderIdx - 36;
-      case "decade": return m <= sliderIdx && m > sliderIdx - 120;
-      default: return m <= sliderIdx;   // cumulative
+      case "recent3m": return m <= sliderIdx && m > sliderIdx - 3;    // 近三月内
+      case "recent3y": return m <= sliderIdx && m > sliderIdx - 36;   // 近三年内
+      case "decade": return m <= sliderIdx && m > sliderIdx - 120;    // 近十年内
+      default: return m <= sliderIdx;                                 // 累计出现
     }
   }
 
@@ -134,13 +152,14 @@
 
   function makeMarker(ev) {
     const [la, lo] = jitter(ev);
-    return L.circleMarker([la, lo], {
-      radius: 4.5,
+    const mk = L.circleMarker([la, lo], {
+      radius: 5.5,
       color: "#3a2c1e",
       weight: 0.6,
       fillColor: catColor(ev),
       fillOpacity: 0.85,
-    }).bindPopup(popupHTML(ev), { maxWidth: 300 });
+    }).bindPopup(popupHTML(ev), { maxWidth: 300, closeButton: false, autoPan: false });
+    return mk;
   }
 
   /* ---------------- 渲染 ---------------- */
@@ -163,6 +182,7 @@
     }
     updateStats(wanted.size);
     renderList();
+    hitCache = null;
   }
 
   function updateStats(visible) {
@@ -286,8 +306,8 @@
     sliderIdx = MONTHS - 1;
     timeline.value = sliderIdx;
     timeLabel.textContent = monthLabel(sliderIdx);
-    mode = "recent3";
-    document.getElementById("mode").value = "recent3";
+    mode = "recent3m";
+    document.getElementById("mode").value = "recent3m";
     applyFilters();
     map.setView([32.5, 110.5], 5);
   });
@@ -322,6 +342,43 @@
     }
   }
 
+  /* --------- 命中检测：悬停弹出说明，移开自动关闭；点击（触屏）打开 --------- */
+  let hitCache = null;      // [[x, y, marker], ...] 依当前视图缓存
+  let hoveredMk = null;
+  function nearestMarker(latlng, tolPx) {
+    if (!hitCache) {
+      hitCache = [];
+      for (const mk of shown.values()) {
+        const p = map.latLngToContainerPoint(mk.getLatLng());
+        hitCache.push([p.x, p.y, mk]);
+      }
+    }
+    const p = map.latLngToContainerPoint(latlng);
+    let best = null, bestD = tolPx;
+    for (const [x, y, mk] of hitCache) {
+      const dx = x - p.x, dy = y - p.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < bestD) { bestD = d; best = mk; }
+    }
+    return best;
+  }
+  map.on("zoomend moveend", () => { hitCache = null; });
+  map.on("mousemove", (e) => {
+    const mk = nearestMarker(e.latlng, 14);
+    if (mk !== hoveredMk) {
+      if (hoveredMk) hoveredMk.closePopup();
+      hoveredMk = mk;
+      if (mk) mk.openPopup();          // 悬停自动弹出
+    }
+  });
+  map.on("mouseout", () => {
+    if (hoveredMk) { hoveredMk.closePopup(); hoveredMk = null; }   // 移出地图自动关闭
+  });
+  map.on("click", (e) => {
+    const mk = nearestMarker(e.latlng, 16);
+    if (mk) mk.openPopup();            // 触屏/点击打开
+  });
+
   // 模态框
   document.getElementById("btn-about").addEventListener("click", () =>
     document.getElementById("about-modal").classList.remove("hidden"));
@@ -329,6 +386,7 @@
     document.getElementById("about-modal").classList.add("hidden"));
 
   /* ---------------- 启动 ---------------- */
+  window.__APP__ = { map, shown };   // 供自动化测试/调试使用
   timeLabel.textContent = monthLabel(sliderIdx);
   applyFilters();
   const loading = document.getElementById("loading");

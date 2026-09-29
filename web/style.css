@@ -86,11 +86,13 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 #map-wrap { flex: 1; position: relative; min-width: 0; }
 #map { position: absolute; inset: 0 0 62px 0; background: #b9c9cc; }  /* 海域底色 */
 .river-label {
+  pointer-events: none;
   background: transparent; border: none; box-shadow: none;
   color: #4c6b7a; font-size: 11px; letter-spacing: 2px;
   text-shadow: 0 0 3px #f0e9d8, 0 0 5px #f0e9d8; white-space: nowrap;
 }
 .unit-label {
+  pointer-events: none;
   background: transparent; border: none; box-shadow: none;
   color: #5c4a30; font-size: 12px; font-weight: bold; letter-spacing: 3px;
   text-shadow: 0 0 3px #f0e9d8, 0 0 6px #f0e9d8; opacity: .9; white-space: nowrap;
@@ -166,4 +168,17 @@ body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
   #sidebar { width: 100%; max-height: 38vh; order: 2; }
   #map-wrap { order: 1; }
   #map { inset: 0 0 56px 0; }
+}
+
+
+/* ---------- 悬停说明小窗：不拦截鼠标，避免悬停闪烁 ---------- */
+#map .leaflet-popup { pointer-events: none; }
+#map .leaflet-popup-content { user-select: none; }
+
+/* 邻国标注 */
+.country-label {
+  pointer-events: none;
+  background: transparent; border: none; box-shadow: none;
+  color: #6b5233; font-size: 13px; font-weight: bold; letter-spacing: 4px;
+  text-shadow: 0 0 3px #f0e9d8, 0 0 6px #f0e9d8; opacity: .95; white-space: nowrap;
 }
